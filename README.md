@@ -67,7 +67,7 @@ Contributions are what make the open source community such an amazing place to b
 <!-- References -->
 ## References
 
-* [1](http://infolab.stanford.edu/~ullman/mmds/ch3.pdf)
-* [2](http://web.stanford.edu/class/cs246/slides/03-lsh.pdf)
-* [3](http://web.stanford.edu/class/cs246/slides/04-lsh_theory.pdf.)
+* [Finding Similar Items](http://infolab.stanford.edu/~ullman/mmds/ch3.pdf)
+* [Finding Similar Items: Locality Sensitive Hash](http://web.stanford.edu/class/cs246/slides/03-lsh.pdf)
+* [Theory of Locality Sensitive Hash](http://web.stanford.edu/class/cs246/slides/04-lsh_theory.pdf)
 
