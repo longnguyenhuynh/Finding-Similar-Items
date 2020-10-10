@@ -21,9 +21,6 @@
 ### Built With
 
 * []()
-* []()
-* []()
-
 
 
 <!-- GETTING STARTED -->
@@ -67,10 +64,10 @@ Contributions are what make the open source community such an amazing place to b
 5. Open a Pull Request
 
 
-<!-- ACKNOWLEDGEMENTS -->
-## Acknowledgements
+<!-- References -->
+## References
 
-* []()
-* []()
-* []()
+* [](http://infolab.stanford.edu/~ullman/mmds/ch3.pdf)
+* [](http://web.stanford.edu/class/cs246/slides/03-lsh.pdf)
+* [](http://web.stanford.edu/class/cs246/slides/04-lsh_theory.pdf.)
 
