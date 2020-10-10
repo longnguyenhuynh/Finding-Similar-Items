@@ -67,7 +67,7 @@ Contributions are what make the open source community such an amazing place to b
 <!-- References -->
 ## References
 
-* [](http://infolab.stanford.edu/~ullman/mmds/ch3.pdf)
-* [](http://web.stanford.edu/class/cs246/slides/03-lsh.pdf)
-* [](http://web.stanford.edu/class/cs246/slides/04-lsh_theory.pdf.)
+* [1](http://infolab.stanford.edu/~ullman/mmds/ch3.pdf)
+* [2](http://web.stanford.edu/class/cs246/slides/03-lsh.pdf)
+* [3](http://web.stanford.edu/class/cs246/slides/04-lsh_theory.pdf.)
 
