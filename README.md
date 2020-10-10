@@ -38,20 +38,6 @@ To get a local copy up and running follow these simple steps.
 git clone https://github.com/longnguyenhuynh/Finding-Similar-Items.git
 ```
 
-<!-- USAGE EXAMPLES -->
-## Usage
-
-_For more examples, please refer to the [Documentation](https://example.com)_
-
-
-
-<!-- ROADMAP -->
-## Roadmap
-
-See the [open issues](https://github.com/longnguyenhuynh/Finding-Similar-Items/issues) for a list of proposed features (and known issues).
-
-
-
 <!-- CONTRIBUTING -->
 ## Contributing
 
@@ -70,4 +56,3 @@ Contributions are what make the open source community such an amazing place to b
 * [Finding Similar Items](http://infolab.stanford.edu/~ullman/mmds/ch3.pdf)
 * [Finding Similar Items: Locality Sensitive Hash](http://web.stanford.edu/class/cs246/slides/03-lsh.pdf)
 * [Theory of Locality Sensitive Hash](http://web.stanford.edu/class/cs246/slides/04-lsh_theory.pdf)
-
