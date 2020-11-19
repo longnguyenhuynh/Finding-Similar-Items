@@ -52,3 +52,9 @@ Contributions are what make the open source community such an amazing place to b
 * [Finding Similar Items](http://infolab.stanford.edu/~ullman/mmds/ch3.pdf)
 * [Finding Similar Items: Locality Sensitive Hash](http://web.stanford.edu/class/cs246/slides/03-lsh.pdf)
 * [Theory of Locality Sensitive Hash](http://web.stanford.edu/class/cs246/slides/04-lsh_theory.pdf)
+
+<!-- Data -->
+## Data
+* [Caltech 101](http://www.vision.caltech.edu/Image_Datasets/Caltech101/)
+* [Colab](https://colab.research.google.com/drive/1dDM3HBi3e8inb09fmb_u7GTBDCmt_5WR?usp=sharing)
+
