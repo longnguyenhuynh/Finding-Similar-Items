@@ -55,6 +55,6 @@ def minhash(image_file: str, threshold=0.7) -> dict:
 
 
 if __name__ == "__main__":
-    img_similar_dict = minhash('cup/image_0001.jpg')
+    img_similar_dict = minhash('cup/image_0013.jpg')
     for item in img_similar_dict.items():
         print(item)

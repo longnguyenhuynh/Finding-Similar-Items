@@ -6,9 +6,9 @@ from typing import Dict, List, Tuple
 import matplotlib.pyplot as plt
 import cv2
 import random
-import imagehash
 import numpy as np
 from PIL import Image
+import imagehash
 
 
 def make_random_hash_fn(p=2**33-355, m=4294967295):
@@ -28,14 +28,13 @@ def make_minhash_signature(data, num_hashes):
     # generate hash functions
     hash_funcs = make_hashes(num_hashes)
     rows, cols, sigrows = len(data), len(data[0]), len(hash_funcs)
-
     # initialize signature matrix with maxint
     sigmatrix = []
     for i in range(sigrows):
-        sigmatrix.append([sys.maxint] * cols)
+        sigmatrix.append([np.inf] * cols)
 
     for r in range(rows):
-        hashvalue = map(lambda x: x(r), hash_funcs)
+        hashvalue = list(map(lambda x: x(r), hash_funcs))
         # if data != 0 and signature > hash value, replace signature with hash value
         for c in range(cols):
             if data[r][c] == 0:
@@ -52,9 +51,7 @@ def calculate_signature(image_file: str, hash_size: int) -> np.ndarray:
             (hash_size+1, hash_size),
             Image.ANTIALIAS)
         dhash = imagehash.dhash(pil_image, hash_size)
-        signature = dhash.hash.flatten()
-        #signature = make_minhash_signature(pil_image, hash_size)
-        print(signature)
+        signature = make_minhash_signature(dhash.hash, hash_size)
         pil_image.close()
         return signature
     except IOError as e:
@@ -94,43 +91,43 @@ def find_near_duplicates(input_dir: str, threshold: float, hash_size: int, bands
             # Not a PIL image, skip this file
             continue
 
-        # Keep track of each image's signature
-        signatures[fh] = np.packbits(signature)
+    #     # Keep track of each image's signature
+    #     signatures[fh] = np.packbits(signature)
 
-        # Locality Sensitive Hashing
-        for i in range(bands):
-            signature_band = signature[i*rows:(i+1)*rows]
-            signature_band_bytes = signature_band.tostring()
-            if signature_band_bytes not in hash_buckets_list[i]:
-                hash_buckets_list[i][signature_band_bytes] = list()
-            hash_buckets_list[i][signature_band_bytes].append(fh)
+    #     # Locality Sensitive Hashing
+    #     for i in range(bands):
+    #         signature_band = signature[i*rows:(i+1)*rows]
+    #         signature_band_bytes = signature_band.tostring()
+    #         if signature_band_bytes not in hash_buckets_list[i]:
+    #             hash_buckets_list[i][signature_band_bytes] = list()
+    #         hash_buckets_list[i][signature_band_bytes].append(fh)
 
-    # Build candidate pairs based on bucket membership
-    candidate_pairs = set()
-    for hash_buckets in hash_buckets_list:
-        for hash_bucket in hash_buckets.values():
-            if len(hash_bucket) > 1:
-                hash_bucket = sorted(hash_bucket)
-                for i in range(len(hash_bucket)):
-                    for j in range(i+1, len(hash_bucket)):
-                        candidate_pairs.add(
-                            tuple([hash_bucket[i], hash_bucket[j]])
-                        )
+    # # Build candidate pairs based on bucket membership
+    # candidate_pairs = set()
+    # for hash_buckets in hash_buckets_list:
+    #     for hash_bucket in hash_buckets.values():
+    #         if len(hash_bucket) > 1:
+    #             hash_bucket = sorted(hash_bucket)
+    #             for i in range(len(hash_bucket)):
+    #                 for j in range(i+1, len(hash_bucket)):
+    #                     candidate_pairs.add(
+    #                         tuple([hash_bucket[i], hash_bucket[j]])
+    #                     )
 
-    # Check candidate pairs for similarity
-    near_duplicates = list()
-    for cpa, cpb in candidate_pairs:
-        hd = sum(np.bitwise_xor(
-            np.unpackbits(signatures[cpa]),
-            np.unpackbits(signatures[cpb])
-        ))
-        similarity = (hash_size**2 - hd) / hash_size**2
-        if similarity > threshold:
-            near_duplicates.append((cpa, cpb, similarity))
+    # # Check candidate pairs for similarity
+    # near_duplicates = list()
+    # for cpa, cpb in candidate_pairs:
+    #     hd = sum(np.bitwise_xor(
+    #         np.unpackbits(signatures[cpa]),
+    #         np.unpackbits(signatures[cpb])
+    #     ))
+    #     similarity = (hash_size**2 - hd) / hash_size**2
+    #     if similarity > threshold:
+    #         near_duplicates.append((cpa, cpb, similarity))
 
-    # Sort near-duplicates by descending similarity and return
-    near_duplicates.sort(key=lambda x: x[2], reverse=True)
-    return near_duplicates
+    # # Sort near-duplicates by descending similarity and return
+    # near_duplicates.sort(key=lambda x: x[2], reverse=True)
+    # return near_duplicates
 
 
 def main(argv):
