@@ -4,14 +4,16 @@ import matplotlib.pyplot as plt
 import cv2
 import os
 from hashlib import md5
-import scipy.spatial
+from sklearn.metrics import jaccard_score
 
 IMAGE_DIR = 'data/'
-SIZE = 30
-SIMILARITY = .4
+SIZE = 128
+SIMILARITY = 0.6
 
 os.chdir(IMAGE_DIR)
 image_files = os.listdir()
+
+# --- Images Processing ---
 
 
 def filter_images(images):
@@ -52,39 +54,7 @@ def difference_score(image, height=SIZE, width=SIZE):
     difference = intensity_diff(row_res, col_res)
     return difference
 
-
-def difference_score_dict_hash(image_list):
-    ds_dict = {}
-    duplicates = []
-    hash_ds = []
-    for image in image_list:
-        ds = difference_score(image)
-        hash_ds.append(ds)
-        filehash = md5(ds).hexdigest()
-        if filehash not in ds_dict:
-            ds_dict[filehash] = image
-        else:
-            duplicates.append((image, ds_dict[filehash]))
-    return duplicates, ds_dict, hash_ds
-
-
-image_files = filter_images(image_files)
-duplicates, ds_dict, hash_ds = difference_score_dict_hash(image_files)
-
-for file_names in duplicates:
-    try:
-        plt.subplot(121), plt.imshow(cv2.imread(file_names[0]))
-        plt.title('Duplicate'), plt.xticks([]), plt.yticks([])
-        plt.subplot(122), plt.imshow(cv2.imread(file_names[1]))
-        plt.title('Original'), plt.xticks([]), plt.yticks([])
-        plt.show()
-    except OSError as e:
-        continue
-
-
-def hamming_distance(image, image2):
-    score = scipy.spatial.distance.hamming(image, image2)
-    return score
+# --- Images Processing ---
 
 
 def difference_score_dict(image_list):
@@ -103,15 +73,25 @@ def difference_score_dict(image_list):
 image_files = filter_images(image_files)
 duplicates, ds_dict = difference_score_dict(image_files)
 
+
+def jaccard(arr1: np.ndarray, arr2: np.ndarray) -> float:
+    count = 0
+    for i in range(len(arr1)):
+        if arr1[i] == arr2[i]:
+            count += 1
+    return count/len(arr1)
+
+
 for k1, k2 in itertools.combinations(ds_dict, 2):
-    if hamming_distance(ds_dict[k1], ds_dict[k2]) < SIMILARITY:
+    print(jaccard(ds_dict[k1], ds_dict[k2]))
+    if jaccard(ds_dict[k1], ds_dict[k2]) >= SIMILARITY:
         duplicates.append((k1, k2))
 
 for file_names in duplicates:
     try:
 
         plt.subplot(121), plt.imshow(cv2.imread(file_names[0]))
-        plt.title('Near Duplicate'), plt.xticks([]), plt.yticks([])
+        plt.title('Similar'), plt.xticks([]), plt.yticks([])
 
         plt.subplot(122), plt.imshow(cv2.imread(file_names[1]))
         plt.title('Original'), plt.xticks([]), plt.yticks([])

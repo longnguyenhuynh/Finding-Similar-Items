@@ -27,6 +27,7 @@ def calculate_signature(image_file: str, hash_size: int) -> np.ndarray:
         dhash = imagehash.dhash(pil_image, hash_size)
         signature = dhash.hash.flatten()
         pil_image.close()
+        print(signature.astype(int))
         return signature.astype(int)
     except IOError as e:
         raise e
@@ -54,6 +55,6 @@ def minhash(image_file: str, threshold=0.7) -> dict:
 
 
 if __name__ == "__main__":
-    img_similar_dict = minhash('data/image_0013.jpg')
+    img_similar_dict = minhash('data/image_0003.jpg')
     for item in img_similar_dict.items():
         print(item)
