@@ -48,7 +48,7 @@ def calculate_signature(image_file: str, hash_size: int) -> np.ndarray:
         pil_image = Image.open(image_file).convert("L").resize(
             (hash_size+1, hash_size),
             Image.ANTIALIAS)
-        pix = np.array(pil_image)
+        pix = np.array(pil_image) > 128
         signature = np.array(make_minhash_signature(pix)).flatten()
         pil_image.close()
         return signature
