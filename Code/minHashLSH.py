@@ -7,9 +7,7 @@ import matplotlib.pyplot as plt
 import cv2
 import random
 import numpy as np
-from PIL import Image
-import imagehash
-
+from PIL import Image, ImageOps
 
 def make_random_hash_fn(p=2**33-355, m=4294967295):
     a = random.randint(1, p-1)
@@ -24,7 +22,7 @@ def make_hashes(num_hash=1):
     return h_functions
 
 
-def make_minhash_signature(data, num_hashes):
+def make_minhash_signature(data, num_hashes=1000):
     # generate hash functions
     hash_funcs = make_hashes(num_hashes)
     rows, cols, sigrows = len(data), len(data[0]), len(hash_funcs)
@@ -50,9 +48,8 @@ def calculate_signature(image_file: str, hash_size: int) -> np.ndarray:
         pil_image = Image.open(image_file).convert("L").resize(
             (hash_size+1, hash_size),
             Image.ANTIALIAS)
-        dhash = imagehash.dhash(pil_image, hash_size)
-        print(dhash.hash)
-        signature = np.array(make_minhash_signature(dhash.hash, hash_size)).flatten()
+        pix = np.array(pil_image)
+        signature = np.array(make_minhash_signature(pix)).flatten()
         pil_image.close()
         return signature
     except IOError as e:
@@ -101,7 +98,6 @@ def find_near_duplicates(input_dir: str, threshold: float, hash_size: int, bands
             if signature_band_bytes not in hash_buckets_list[i]:
                 hash_buckets_list[i][signature_band_bytes] = list()
             hash_buckets_list[i][signature_band_bytes].append(fh)
-
     # Build candidate pairs based on bucket membership
     candidate_pairs = set()
     for hash_buckets in hash_buckets_list:
@@ -113,7 +109,6 @@ def find_near_duplicates(input_dir: str, threshold: float, hash_size: int, bands
                         candidate_pairs.add(
                             tuple([hash_bucket[i], hash_bucket[j]])
                         )
-
     # Check candidate pairs for similarity
     near_duplicates = list()
     for cpa, cpb in candidate_pairs:
@@ -124,7 +119,6 @@ def find_near_duplicates(input_dir: str, threshold: float, hash_size: int, bands
         similarity = (hash_size**2 - hd) / hash_size**2
         if similarity > threshold:
             near_duplicates.append((cpa, cpb, similarity))
-
     # Sort near-duplicates by descending similarity and return
     near_duplicates.sort(key=lambda x: x[2], reverse=True)
     return near_duplicates
@@ -137,7 +131,7 @@ def main(argv):
     parser.add_argument("-i", "--inputdir", type=str, default="",
                         help="directory containing images to check")
     parser.add_argument("-t", "--threshold", type=float,
-                        default=0.5, help="similarity threshold")
+                        default=0.0, help="similarity threshold")
     parser.add_argument("-s", "--hash-size", type=int, default=16,
                         help="hash size to use, signature length = hash_size^2", dest="hash_size")
     parser.add_argument("-b", "--bands", type=int,

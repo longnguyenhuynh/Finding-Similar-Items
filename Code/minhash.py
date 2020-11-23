@@ -65,8 +65,6 @@ def find_near_duplicates(input_dir: str, threshold: float, hash_size: int, bands
 
         # Keep track of each image's signature
         signatures[fh] = np.packbits(signature)
-        print(signatures[fh])
-        
         # Locality Sensitive Hashing
         for i in range(bands):
             signature_band = signature[i*rows:(i+1)*rows]
@@ -86,7 +84,6 @@ def find_near_duplicates(input_dir: str, threshold: float, hash_size: int, bands
                         candidate_pairs.add(
                             tuple([hash_bucket[i],hash_bucket[j]])
                         )
-
     # Check candidate pairs for similarity
     near_duplicates = list()
     for cpa, cpb in candidate_pairs:
@@ -108,7 +105,7 @@ def main(argv):
     # Argument parser
     parser = argparse.ArgumentParser(description="Efficient detection of near-duplicate images using locality sensitive hashing")
     parser.add_argument("-i", "--inputdir", type=str, default="", help="directory containing images to check")
-    parser.add_argument("-t", "--threshold", type=float, default=0.9, help="similarity threshold")
+    parser.add_argument("-t", "--threshold", type=float, default=0.5, help="similarity threshold")
     parser.add_argument("-s", "--hash-size", type=int, default=16, help="hash size to use, signature length = hash_size^2", dest="hash_size")
     parser.add_argument("-b", "--bands", type=int, default=16, help="number of bands")
 
