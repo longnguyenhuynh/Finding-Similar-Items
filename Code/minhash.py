@@ -91,6 +91,7 @@ def find_near_duplicates(input_dir: str, threshold: float, hash_size: int, bands
                 np.unpackbits(signatures[cpa]), 
                 np.unpackbits(signatures[cpb])
         ))
+        print(hd)
         similarity = (hash_size**2 - hd) / hash_size**2
         if similarity > threshold:
             near_duplicates.append((cpa, cpb, similarity))

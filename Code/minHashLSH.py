@@ -9,6 +9,7 @@ import random
 import numpy as np
 from PIL import Image, ImageOps
 
+
 def make_random_hash_fn(p=2**33-355, m=4294967295):
     a = random.randint(1, p-1)
     b = random.randint(0, p-1)
@@ -21,10 +22,10 @@ def make_hashes(num_hash=1):
         h_functions.append(make_random_hash_fn())
     return h_functions
 
+hash_funcs = make_hashes(1000)
 
-def make_minhash_signature(data, num_hashes=1000):
+def make_minhash_signature(data):
     # generate hash functions
-    hash_funcs = make_hashes(num_hashes)
     rows, cols, sigrows = len(data), len(data[0]), len(hash_funcs)
     # initialize signature matrix with maxint
     sigmatrix = []
@@ -131,7 +132,7 @@ def main(argv):
     parser.add_argument("-i", "--inputdir", type=str, default="",
                         help="directory containing images to check")
     parser.add_argument("-t", "--threshold", type=float,
-                        default=0.0, help="similarity threshold")
+                        default=0.7, help="similarity threshold")
     parser.add_argument("-s", "--hash-size", type=int, default=16,
                         help="hash size to use, signature length = hash_size^2", dest="hash_size")
     parser.add_argument("-b", "--bands", type=int,
