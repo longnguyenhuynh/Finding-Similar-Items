@@ -10,8 +10,10 @@ import numpy as np
 from PIL import Image
 
 
-def jaccard(list1, list2):
-    return len(set(list1).intersection(set(list2))) / len(set(list1).union(set(list2)))
+def jaccard(x, y):
+    intersection_cardinality = len(set.intersection(*[set(x), set(y)]))
+    union_cardinality = len(set.union(*[set(x), set(y)]))
+    return intersection_cardinality/float(union_cardinality)
 
 
 def make_random_hash_fn(p=2**33-355, m=4294967295):
