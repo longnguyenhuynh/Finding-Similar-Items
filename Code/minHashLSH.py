@@ -7,7 +7,14 @@ import matplotlib.pyplot as plt
 import cv2
 import random
 import numpy as np
-from PIL import Image, ImageOps
+from PIL import Image
+
+def jaccard(arr1: np.ndarray, arr2: np.ndarray) -> float:
+    count = 0
+    for i in range(len(arr1)):
+        if arr1[i] == arr2[i]:
+            count += 1
+    return count/len(arr1)
 
 
 def make_random_hash_fn(p=2**33-355, m=4294967295):
@@ -113,11 +120,7 @@ def find_near_duplicates(input_dir: str, threshold: float, hash_size: int, bands
     # Check candidate pairs for similarity
     near_duplicates = list()
     for cpa, cpb in candidate_pairs:
-        hd = sum(np.bitwise_xor(
-            np.unpackbits(signatures[cpa]),
-            np.unpackbits(signatures[cpb])
-        ))
-        similarity = (hash_size**2 - hd) / hash_size**2
+        similarity = jaccard(signatures[cpa], signatures[cpb])
         if similarity > threshold:
             near_duplicates.append((cpa, cpb, similarity))
     # Sort near-duplicates by descending similarity and return
@@ -132,7 +135,7 @@ def main(argv):
     parser.add_argument("-i", "--inputdir", type=str, default="",
                         help="directory containing images to check")
     parser.add_argument("-t", "--threshold", type=float,
-                        default=0.7, help="similarity threshold")
+                        default=0.5, help="similarity threshold")
     parser.add_argument("-s", "--hash-size", type=int, default=16,
                         help="hash size to use, signature length = hash_size^2", dest="hash_size")
     parser.add_argument("-b", "--bands", type=int,
