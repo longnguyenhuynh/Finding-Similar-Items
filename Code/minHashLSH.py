@@ -9,12 +9,9 @@ import random
 import numpy as np
 from PIL import Image
 
-def jaccard(arr1: np.ndarray, arr2: np.ndarray) -> float:
-    count = 0
-    for i in range(len(arr1)):
-        if arr1[i] == arr2[i]:
-            count += 1
-    return count/len(arr1)
+
+def jaccard(list1, list2):
+    return len(set(list1).intersection(set(list2))) / len(set(list1).union(set(list2)))
 
 
 def make_random_hash_fn(p=2**33-355, m=4294967295):
@@ -29,7 +26,9 @@ def make_hashes(num_hash=1):
         h_functions.append(make_random_hash_fn())
     return h_functions
 
+
 hash_funcs = make_hashes(1000)
+
 
 def make_minhash_signature(data):
     # generate hash functions
