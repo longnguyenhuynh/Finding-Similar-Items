@@ -51,6 +51,7 @@ def calculate_signature(image_file: str, hash_size: int) -> np.ndarray:
             (hash_size+1, hash_size),
             Image.ANTIALIAS)
         dhash = imagehash.dhash(pil_image, hash_size)
+        print(dhash.hash)
         signature = np.array(make_minhash_signature(dhash.hash, hash_size)).flatten()
         pil_image.close()
         return signature
@@ -93,7 +94,6 @@ def find_near_duplicates(input_dir: str, threshold: float, hash_size: int, bands
 
         # Keep track of each image's signature
         signatures[fh] = signature
-
         # Locality Sensitive Hashing
         for i in range(bands):
             signature_band = signature[i*rows:(i+1)*rows]
@@ -137,7 +137,7 @@ def main(argv):
     parser.add_argument("-i", "--inputdir", type=str, default="",
                         help="directory containing images to check")
     parser.add_argument("-t", "--threshold", type=float,
-                        default=0.7, help="similarity threshold")
+                        default=0.5, help="similarity threshold")
     parser.add_argument("-s", "--hash-size", type=int, default=16,
                         help="hash size to use, signature length = hash_size^2", dest="hash_size")
     parser.add_argument("-b", "--bands", type=int,
