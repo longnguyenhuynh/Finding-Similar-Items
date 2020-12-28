@@ -8,10 +8,8 @@ import cv2
 import random
 import numpy as np
 from PIL import Image
-import multiprocessing as mp
+from mpi4py import MPI
 
-nprocs = mp.cpu_count()
-pool = mp.Pool(processes=nprocs)
 
 def jaccard(x, y):
     intersection_cardinality = len(set.intersection(*[set(x), set(y)]))
@@ -23,10 +21,6 @@ def make_random_hash_fn(p=2**33-355, m=4294967295):
     a = random.randint(1, p-1)
     b = random.randint(0, p-1)
     return lambda x: ((a * x + b) % p) % m
-
-
-def make_hashes(num_hash=1):
-    return [make_random_hash_fn() for _ in range(num_hash)]
 
 
 hash_funcs = None
@@ -148,7 +142,7 @@ def main(argv):
     bands = args.bands
 
     global hash_funcs
-    hash_funcs = make_hashes(hash_size**2)
+    hash_funcs = [make_random_hash_fn() for _ in range(hash_size**2)]
 
     try:
         near_duplicates = find_near_duplicates(
