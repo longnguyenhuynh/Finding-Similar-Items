@@ -134,10 +134,10 @@ def main(argv):
                         help="directory containing images to check")
     parser.add_argument("-t", "--threshold", type=float,
                         default=0.8, help="similarity threshold")
-    parser.add_argument("-s", "--hash-size", type=int, default=32,
+    parser.add_argument("-s", "--hash-size", type=int, default=16,
                         help="hash size to use, signature length = hash_size^2", dest="hash_size")
     parser.add_argument("-b", "--bands", type=int,
-                        default=32, help="number of bands")
+                        default=16, help="number of bands")
 
     args = parser.parse_args()
     input_dir = args.inputdir
