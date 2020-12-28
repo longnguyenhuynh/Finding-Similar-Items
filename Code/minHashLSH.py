@@ -23,13 +23,10 @@ def make_random_hash_fn(p=2**33-355, m=4294967295):
 
 
 def make_hashes(num_hash=1):
-    h_functions = []
-    for i in range(num_hash):
-        h_functions.append(make_random_hash_fn())
-    return h_functions
+    return [make_random_hash_fn() for _ in range(num_hash)]
 
 
-hash_funcs = make_hashes(1000)
+hash_funcs = None
 
 
 def make_minhash_signature(data):
@@ -136,17 +133,20 @@ def main(argv):
     parser.add_argument("-i", "--inputdir", type=str, default="",
                         help="directory containing images to check")
     parser.add_argument("-t", "--threshold", type=float,
-                        default=0.9, help="similarity threshold")
-    parser.add_argument("-s", "--hash-size", type=int, default=16,
+                        default=0.8, help="similarity threshold")
+    parser.add_argument("-s", "--hash-size", type=int, default=32,
                         help="hash size to use, signature length = hash_size^2", dest="hash_size")
     parser.add_argument("-b", "--bands", type=int,
-                        default=16, help="number of bands")
+                        default=32, help="number of bands")
 
     args = parser.parse_args()
     input_dir = args.inputdir
     threshold = args.threshold
     hash_size = args.hash_size
     bands = args.bands
+
+    global hash_funcs
+    hash_funcs = make_hashes(hash_size**2)
 
     try:
         near_duplicates = find_near_duplicates(
