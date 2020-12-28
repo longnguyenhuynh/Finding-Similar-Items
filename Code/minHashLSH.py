@@ -10,7 +10,6 @@ import numpy as np
 from PIL import Image
 import multiprocessing as mp
 
-
 def jaccard(x, y, imgA, imgB):
     intersection_cardinality = len(set.intersection(*[set(x), set(y)]))
     union_cardinality = len(set.union(*[set(x), set(y)]))
@@ -43,11 +42,6 @@ def make_minhash_signature(data):
     return sigmatrix
 
 
-nprocs = mp.cpu_count()
-pool = mp.Pool(processes=nprocs)
-hash_funcs = None
-
-
 def calculate_signature(image_file: str, hash_size: int) -> np.ndarray:
     try:
         pil_image = Image.open(image_file).convert("L").resize(
@@ -56,9 +50,9 @@ def calculate_signature(image_file: str, hash_size: int) -> np.ndarray:
         pix = np.array(pil_image) > 128
         signature = np.array(make_minhash_signature(pix)).flatten()
         pil_image.close()
-        return signature
-    except IOError as e:
-        raise e
+        return (image_file,signature)
+    except IOError:
+        pass
 
 
 def find_near_duplicates(input_dir: str, threshold: float, hash_size: int, bands: int) -> List[Tuple[str, str, float]]:
@@ -87,21 +81,31 @@ def find_near_duplicates(input_dir: str, threshold: float, hash_size: int, bands
         raise e
 
     # Iterate through all files in input directory
-    for fh in file_list:
-        try:
-            signature = calculate_signature(fh, hash_size)
-        except IOError:
-            # Not a PIL image, skip this file
-            continue
-        # Keep track of each image's signature
-        signatures[fh] = signature
-        # Locality Sensitive Hashing
+    # for fh in file_list:
+    #     try:
+    #         signature = calculate_signature(fh, hash_size)
+    #     except IOError:
+    #         # Not a PIL image, skip this file
+    #         continue
+    #     # Keep track of each image's signature
+    #     signatures[fh] = signature
+    #     # Locality Sensitive Hashing
+    #     for i in range(bands):
+    #         signature_band = signature[i*rows:(i+1)*rows]
+    #         signature_band_bytes = signature_band.tobytes()
+    #         if signature_band_bytes not in hash_buckets_list[i]:
+    #             hash_buckets_list[i][signature_band_bytes] = list()
+    #         hash_buckets_list[i][signature_band_bytes].append(fh)
+    signature = pool.starmap(calculate_signature, [(fh, hash_size) for fh in file_list])
+    for sig in signature:
+        signatures[sig[0]] = sig[1] 
         for i in range(bands):
             signature_band = signature[i*rows:(i+1)*rows]
             signature_band_bytes = signature_band.tobytes()
             if signature_band_bytes not in hash_buckets_list[i]:
                 hash_buckets_list[i][signature_band_bytes] = list()
-            hash_buckets_list[i][signature_band_bytes].append(fh)
+            hash_buckets_list[i][signature_band_bytes].append(sig[0])
+
     # Build candidate pairs based on bucket membership
     candidate_pairs = set()
     for hash_buckets in hash_buckets_list:
@@ -113,18 +117,20 @@ def find_near_duplicates(input_dir: str, threshold: float, hash_size: int, bands
                         candidate_pairs.add(
                             tuple([hash_bucket[i], hash_bucket[j]])
                         )
-    # Check candidate pairs for similarity
-    near_duplicates = list()
+
+    # Check candidate pairs for similarity (Parallel)
     similarity = pool.starmap(
         jaccard, [(signatures[cpa], signatures[cpb], cpa, cpb) for cpa, cpb in candidate_pairs])
+    near_duplicates = [(similar[0], similar[1], similar[2])
+                       for similar in similarity if similar[2] > threshold]
 
-    [near_duplicates.append((similar[0], similar[1], similar[2]))
-     for similar in similarity if similar[2] > threshold]
     # Sort near-duplicates by descending similarity and return
     near_duplicates.sort(key=lambda x: x[2], reverse=True)
     return near_duplicates
 
-
+nprocs = mp.cpu_count()
+pool = mp.Pool(processes=nprocs)
+hash_funcs = None
 def main(argv):
     # Argument parser
     parser = argparse.ArgumentParser(
@@ -167,7 +173,6 @@ def main(argv):
                 f"No near-duplicates found in {input_dir} (threshold {threshold:.2%})")
     except OSError:
         print(f"Couldn't open input directory {input_dir}")
-
 
 if __name__ == "__main__":
     main(sys.argv)
