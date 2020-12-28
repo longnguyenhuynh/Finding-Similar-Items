@@ -8,7 +8,10 @@ import cv2
 import random
 import numpy as np
 from PIL import Image
+import multiprocessing as mp
 
+nprocs = mp.cpu_count()
+pool = mp.Pool(processes=nprocs)
 
 def jaccard(x, y):
     intersection_cardinality = len(set.intersection(*[set(x), set(y)]))
@@ -94,7 +97,6 @@ def find_near_duplicates(input_dir: str, threshold: float, hash_size: int, bands
         except IOError:
             # Not a PIL image, skip this file
             continue
-
         # Keep track of each image's signature
         signatures[fh] = signature
         # Locality Sensitive Hashing
