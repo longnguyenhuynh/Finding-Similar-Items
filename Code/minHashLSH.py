@@ -8,22 +8,19 @@ import cv2
 import random
 import numpy as np
 from PIL import Image
-from mpi4py import MPI
+import multiprocessing as mp
 
 
-def jaccard(x, y):
+def jaccard(x, y, imgA, imgB):
     intersection_cardinality = len(set.intersection(*[set(x), set(y)]))
     union_cardinality = len(set.union(*[set(x), set(y)]))
-    return intersection_cardinality/float(union_cardinality)
+    return (imgA, imgB, intersection_cardinality/float(union_cardinality))
 
 
 def make_random_hash_fn(p=2**33-355, m=4294967295):
     a = random.randint(1, p-1)
     b = random.randint(0, p-1)
     return lambda x: ((a * x + b) % p) % m
-
-
-hash_funcs = None
 
 
 def make_minhash_signature(data):
@@ -44,6 +41,11 @@ def make_minhash_signature(data):
                 if sigmatrix[i][c] > hashvalue[i]:
                     sigmatrix[i][c] = hashvalue[i]
     return sigmatrix
+
+
+nprocs = mp.cpu_count()
+pool = mp.Pool(processes=nprocs)
+hash_funcs = None
 
 
 def calculate_signature(image_file: str, hash_size: int) -> np.ndarray:
@@ -113,10 +115,11 @@ def find_near_duplicates(input_dir: str, threshold: float, hash_size: int, bands
                         )
     # Check candidate pairs for similarity
     near_duplicates = list()
-    for cpa, cpb in candidate_pairs:
-        similarity = jaccard(signatures[cpa], signatures[cpb])
-        if similarity > threshold:
-            near_duplicates.append((cpa, cpb, similarity))
+    similarity = pool.starmap(
+        jaccard, [(signatures[cpa], signatures[cpb], cpa, cpb) for cpa, cpb in candidate_pairs])
+
+    [near_duplicates.append((similar[0], similar[1], similar[2]))
+     for similar in similarity if similar[2] > threshold]
     # Sort near-duplicates by descending similarity and return
     near_duplicates.sort(key=lambda x: x[2], reverse=True)
     return near_duplicates
@@ -150,12 +153,13 @@ def main(argv):
         if near_duplicates:
             print(
                 f"Found {len(near_duplicates)} near-duplicate images in {input_dir} (threshold {threshold:.2%})")
-            for a, b, s in near_duplicates:
-                print(f"{s:.2%} similarity: file 1: {a} - file 2: {b}")
-                plt.subplot(121), plt.imshow(cv2.imread(a))
+            for dup in near_duplicates:
+                print(
+                    f"{dup[2]:.2%} similarity: file 1: {dup[0]} - file 2: {dup[1]}")
+                plt.subplot(121), plt.imshow(cv2.imread(dup[0]))
                 plt.title('Similar'), plt.xticks([]), plt.yticks([])
 
-                plt.subplot(122), plt.imshow(cv2.imread(b))
+                plt.subplot(122), plt.imshow(cv2.imread(dup[1]))
                 plt.title('Original'), plt.xticks([]), plt.yticks([])
                 plt.show()
         else:
