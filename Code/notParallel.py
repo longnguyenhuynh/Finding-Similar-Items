@@ -3,12 +3,13 @@ import sys
 from os import listdir
 from os.path import isfile, join
 from typing import Dict, List, Tuple
-import matplotlib.pyplot as plt
-import cv2
+# import matplotlib.pyplot as plt
+# import cv2
 import random
 import numpy as np
 from PIL import Image
 import time
+
 
 def jaccard(x, y):
     intersection_cardinality = len(set.intersection(*[set(x), set(y)]))
@@ -21,10 +22,8 @@ def make_random_hash_fn(p=2**33-355, m=4294967295):
     b = random.randint(0, p-1)
     return lambda x: ((a * x + b) % p) % m
 
-hash_funcs = None
 
-
-def make_minhash_signature(data):
+def make_minhash_signature(data, hash_funcs):
     # generate hash functions
     rows, cols, sigrows = len(data), len(data[0]), len(hash_funcs)
     # initialize signature matrix with maxint
@@ -44,20 +43,20 @@ def make_minhash_signature(data):
     return sigmatrix
 
 
-def calculate_signature(image_file: str, hash_size: int) -> np.ndarray:
+def calculate_signature(image_file: str, hash_size: int, hash_funcs) -> np.ndarray:
     try:
         pil_image = Image.open(image_file).convert("L").resize(
             (hash_size+1, hash_size),
             Image.ANTIALIAS)
         pix = np.array(pil_image) > 128
-        signature = np.array(make_minhash_signature(pix)).flatten()
+        signature = np.array(make_minhash_signature(pix, hash_funcs)).flatten()
         pil_image.close()
         return signature
     except IOError as e:
         raise e
 
 
-def find_near_duplicates(input_dir: str, threshold: float, hash_size: int, bands: int) -> List[Tuple[str, str, float]]:
+def find_near_duplicates(input_dir: str, threshold: float, hash_size: int, bands: int, hash_funcs) -> List[Tuple[str, str, float]]:
     """
     Find near-duplicate images
 
@@ -85,7 +84,7 @@ def find_near_duplicates(input_dir: str, threshold: float, hash_size: int, bands
     # Iterate through all files in input directory
     for fh in file_list:
         try:
-            signature = calculate_signature(fh, hash_size)
+            signature = calculate_signature(fh, hash_size, hash_funcs)
         except IOError:
             # Not a PIL image, skip this file
             continue
@@ -99,6 +98,7 @@ def find_near_duplicates(input_dir: str, threshold: float, hash_size: int, bands
             if signature_band_bytes not in hash_buckets_list[i]:
                 hash_buckets_list[i][signature_band_bytes] = list()
             hash_buckets_list[i][signature_band_bytes].append(fh)
+
     # Build candidate pairs based on bucket membership
     candidate_pairs = set()
     for hash_buckets in hash_buckets_list:
@@ -110,12 +110,14 @@ def find_near_duplicates(input_dir: str, threshold: float, hash_size: int, bands
                         candidate_pairs.add(
                             tuple([hash_bucket[i], hash_bucket[j]])
                         )
+
     # Check candidate pairs for similarity
     near_duplicates = list()
     for cpa, cpb in candidate_pairs:
         similarity = jaccard(signatures[cpa], signatures[cpb])
         if similarity > threshold:
             near_duplicates.append((cpa, cpb, similarity))
+
     # Sort near-duplicates by descending similarity and return
     near_duplicates.sort(key=lambda x: x[2], reverse=True)
     return near_duplicates
@@ -139,11 +141,11 @@ def main(argv):
     threshold = args.threshold
     hash_size = args.hash_size
     bands = args.bands
-    global hash_funcs
+
     hash_funcs = [make_random_hash_fn() for _ in range(hash_size**2)]
     try:
         near_duplicates = find_near_duplicates(
-            input_dir, threshold, hash_size, bands)
+            input_dir, threshold, hash_size, bands, hash_funcs)
         if near_duplicates:
             print(
                 f"Found {len(near_duplicates)} near-duplicate images in {input_dir} (threshold {threshold:.2%})")

@@ -3,14 +3,13 @@ import sys
 from os import listdir
 from os.path import isfile, join
 from typing import Dict, List, Tuple
-import matplotlib.pyplot as plt
-import cv2
 import random
 import numpy as np
 from PIL import Image
 import pathos.multiprocessing as mp
 import time
-
+# import matplotlib.pyplot as plt
+# import cv2
 pool: mp.Pool
 
 
@@ -149,7 +148,7 @@ def main(argv):
                 f"Found {len(near_duplicates)} near-duplicate images in {input_dir} (threshold {threshold:.2%})")
             for a, b, s in near_duplicates:
                 print(f"{s:.2%} similarity: file 1: {a} - file 2: {b}")
-                
+
                 # Uncomment to see picture
                 # plt.subplot(121), plt.imshow(cv2.imread(a))
                 # plt.title('Similar'), plt.xticks([]), plt.yticks([])
@@ -166,8 +165,7 @@ def main(argv):
 
 if __name__ == "__main__":
     start = time.time()
-    nprocs = mp.cpu_count()
-    pool = mp.Pool(processes=nprocs)
+    pool = mp.Pool(processes=mp.cpu_count())
     main(sys.argv)
     pool.close()
     end = time.time()
