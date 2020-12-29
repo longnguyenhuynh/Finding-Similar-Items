@@ -8,23 +8,25 @@ import cv2
 import random
 import numpy as np
 from PIL import Image
+import pathos.multiprocessing as mp
 import time
 
-def jaccard(x, y):
+pool: mp.Pool
+
+
+def jaccard(x, y, cpa, cpb):
     intersection_cardinality = len(set.intersection(*[set(x), set(y)]))
     union_cardinality = len(set.union(*[set(x), set(y)]))
-    return intersection_cardinality/float(union_cardinality)
+    return (cpa, cpb, intersection_cardinality/float(union_cardinality))
 
 
-def make_random_hash_fn(p=2**33-355, m=4294967295):
+def make_random_hash_fn(tag, p=2**33-355, m=4294967295):
     a = random.randint(1, p-1)
     b = random.randint(0, p-1)
     return lambda x: ((a * x + b) % p) % m
 
-hash_funcs = None
 
-
-def make_minhash_signature(data):
+def make_minhash_signature(data, hash_funcs):
     # generate hash functions
     rows, cols, sigrows = len(data), len(data[0]), len(hash_funcs)
     # initialize signature matrix with maxint
@@ -44,20 +46,20 @@ def make_minhash_signature(data):
     return sigmatrix
 
 
-def calculate_signature(image_file: str, hash_size: int) -> np.ndarray:
+def calculate_signature(image_file: str, hash_size: int, hash_funcs) -> np.ndarray:
     try:
         pil_image = Image.open(image_file).convert("L").resize(
             (hash_size+1, hash_size),
             Image.ANTIALIAS)
         pix = np.array(pil_image) > 128
-        signature = np.array(make_minhash_signature(pix)).flatten()
+        signature = np.array(make_minhash_signature(pix, hash_funcs)).flatten()
         pil_image.close()
-        return signature
+        return (image_file, signature)
     except IOError as e:
         raise e
 
 
-def find_near_duplicates(input_dir: str, threshold: float, hash_size: int, bands: int) -> List[Tuple[str, str, float]]:
+def find_near_duplicates(input_dir: str, threshold: float, hash_size: int, bands: int, hash_funcs) -> List[Tuple[str, str, float]]:
     """
     Find near-duplicate images
 
@@ -83,22 +85,19 @@ def find_near_duplicates(input_dir: str, threshold: float, hash_size: int, bands
         raise e
 
     # Iterate through all files in input directory
-    for fh in file_list:
-        try:
-            signature = calculate_signature(fh, hash_size)
-        except IOError:
-            # Not a PIL image, skip this file
-            continue
+    signature = pool.starmap(calculate_signature, [(
+        fh, hash_size, hash_funcs) for fh in file_list])
 
-        # Keep track of each image's signature
-        signatures[fh] = signature
+    for sig in signature:
+        signatures[sig[0]] = sig[1]
         # Locality Sensitive Hashing
         for i in range(bands):
-            signature_band = signature[i*rows:(i+1)*rows]
-            signature_band_bytes = signature_band.tostring()
+            signature_band = sig[1][i*rows:(i+1)*rows]
+            signature_band_bytes = signature_band.tobytes()
             if signature_band_bytes not in hash_buckets_list[i]:
                 hash_buckets_list[i][signature_band_bytes] = list()
-            hash_buckets_list[i][signature_band_bytes].append(fh)
+            hash_buckets_list[i][signature_band_bytes].append(sig[0])
+
     # Build candidate pairs based on bucket membership
     candidate_pairs = set()
     for hash_buckets in hash_buckets_list:
@@ -110,12 +109,12 @@ def find_near_duplicates(input_dir: str, threshold: float, hash_size: int, bands
                         candidate_pairs.add(
                             tuple([hash_bucket[i], hash_bucket[j]])
                         )
-    # Check candidate pairs for similarity
-    near_duplicates = list()
-    for cpa, cpb in candidate_pairs:
-        similarity = jaccard(signatures[cpa], signatures[cpb])
-        if similarity > threshold:
-            near_duplicates.append((cpa, cpb, similarity))
+    # Check candidate pairs for similarity (Parallel)
+    similarity = pool.starmap(
+        jaccard, [(signatures[cpa], signatures[cpb], cpa, cpb) for cpa, cpb in candidate_pairs])
+    near_duplicates = [(similar[0], similar[1], similar[2])
+                       for similar in similarity if similar[2] > threshold]
+
     # Sort near-duplicates by descending similarity and return
     near_duplicates.sort(key=lambda x: x[2], reverse=True)
     return near_duplicates
@@ -139,16 +138,19 @@ def main(argv):
     threshold = args.threshold
     hash_size = args.hash_size
     bands = args.bands
-    global hash_funcs
-    hash_funcs = [make_random_hash_fn() for _ in range(hash_size**2)]
+
+    hash_funcs = pool.map(make_random_hash_fn, range(hash_size**2))
+
     try:
         near_duplicates = find_near_duplicates(
-            input_dir, threshold, hash_size, bands)
+            input_dir, threshold, hash_size, bands, hash_funcs)
         if near_duplicates:
             print(
                 f"Found {len(near_duplicates)} near-duplicate images in {input_dir} (threshold {threshold:.2%})")
             for a, b, s in near_duplicates:
                 print(f"{s:.2%} similarity: file 1: {a} - file 2: {b}")
+                
+                # Uncomment to see picture
                 # plt.subplot(121), plt.imshow(cv2.imread(a))
                 # plt.title('Similar'), plt.xticks([]), plt.yticks([])
 
@@ -164,6 +166,9 @@ def main(argv):
 
 if __name__ == "__main__":
     start = time.time()
+    nprocs = mp.cpu_count()
+    pool = mp.Pool(processes=nprocs)
     main(sys.argv)
+    pool.close()
     end = time.time()
     print(end - start)
